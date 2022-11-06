@@ -10,5 +10,6 @@ strip = true
 
 [dependencies]
 clap = { version = "4.0.18", features = ["cargo"] }
+image = "0.24.4"
 log = "0.4.17"
 simplelog = "0.12.0"
