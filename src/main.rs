@@ -3,35 +3,23 @@ extern crate simplelog;
 
 mod padding;
 
-use clap::{command, Arg, ArgAction, ArgMatches};
+use clap::Parser;
 use image::{DynamicImage, GenericImageView, ImageError, io::Reader, RgbaImage, Rgba};
 use log::LevelFilter;
 use padding::Padding;
 use simplelog::{ColorChoice, CombinedLogger, ConfigBuilder, TerminalMode, TermLogger};
 use std::path::Path;
 
-fn parse_arguments() -> ArgMatches {
-    command!()
-        .about("sprita helps prepare sprites for game development usage")
-        .arg(
-            Arg::new("input")
-                .short('i')
-                .long("input")
-                .required(true)
-        )
-        .arg(
-            Arg::new("output")
-                .short('o')
-                .long("output")
-                .required(true)
-        )
-        .arg(
-            Arg::new("force")
-                .short('f')
-                .long("force")
-                .action(ArgAction::SetTrue)
-        )
-        .get_matches()
+#[derive(Parser)]
+struct Arguments {
+    #[arg(short, long)]
+    input: String,
+
+    #[arg(short, long)]
+    output: String,
+
+    #[arg(short, long)]
+    force: bool
 }
 
 fn initialize_logger() {
@@ -240,18 +228,14 @@ fn handle_error(error: &str) {
 }
 
 fn main() {
-    let args = parse_arguments();
+    let args = Arguments::parse();
     initialize_logger();
 
-    let input_path = args.get_one::<String>("input").unwrap();
-    let output_path = args.get_one::<String>("output").unwrap();
-    let force = args.get_flag("force");
+    let output_is_file = Path::new(&args.output).is_file();
 
-    let output_is_file = Path::new(output_path).is_file();
-
-    let image: DynamicImage = match try_read_image(&input_path) {
+    let image: DynamicImage = match try_read_image(&args.input) {
         Err(e) => {
-            let error_message = format!("Error while reading image: {}, {}", input_path, e);
+            let error_message = format!("Error while reading image: {}, {}", args.input, e);
             handle_error(error_message.as_str());
             return;
         },
@@ -263,17 +247,17 @@ fn main() {
         None => image
     };
 
-    if output_is_file && !force {
+    if output_is_file && !args.force {
         handle_error("Output already exists. Aborting. Specify --force flag if you want to replace the output");
     }
 
-    match clean_image.save(output_path) {
+    match clean_image.save(&args.output) {
         Err(e) => {
             handle_error(e.to_string().as_str());
             return;
         },
         Ok(_) => {
-            info!("Successfully exported to: {}", output_path);
+            info!("Successfully exported to: {}", args.output);
         }
     }
 }

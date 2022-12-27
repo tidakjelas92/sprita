@@ -9,7 +9,7 @@ edition = "2021"
 strip = true
 
 [dependencies]
-clap = { version = "4.0.18", features = ["cargo"] }
+clap = { version = "4.0.18", features = ["cargo", "derive"] }
 image = "0.24.4"
 log = "0.4.17"
 simplelog = "0.12.0"
