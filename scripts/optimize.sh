@@ -1,9 +1,7 @@
 #!/bin/bash
 
 # This script optimizes all png files in the dir.
-# Configure the path below to point to the correct path.
 
-SPRITA="/home/hansen/projects/sprita/target/release/sprita"
 EXPORT_DIRNAME="export"
 PNG_FILES=(./*.png)
 
@@ -16,7 +14,7 @@ function command_exists() {
   return 0
 }
 
-if ! command_exists $SPRITA; then
+if ! command_exists sprita; then
   echo >&2 "[ERROR]: sprita was not found. Check the path."
   exit 1
 fi
@@ -34,7 +32,7 @@ fi
 for FILE in "${PNG_FILES[@]}"; do
   FILENAME=$(basename "$FILE")
   OUTPUT="./$EXPORT_DIRNAME/$FILENAME"
-  $SPRITA -i $FILE -o $OUTPUT -f
+  sprita -i $FILE -o $OUTPUT -f
   if [[ $? -ne 0 ]]; then
     echo >&2 "Error detected while running script. Aborting."
     exit 1
