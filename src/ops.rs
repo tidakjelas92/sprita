@@ -1,4 +1,4 @@
-use crate::padding::*;
+use crate::padding::Padding;
 use image::{DynamicImage, GenericImageView, RgbaImage, Rgba};
 
 pub fn clean_and_optimize(image: &DynamicImage) -> Option<DynamicImage> {
