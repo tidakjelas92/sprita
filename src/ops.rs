@@ -1,5 +1,5 @@
 use crate::padding::Padding;
-use image::{DynamicImage, GenericImageView, RgbaImage, Rgba};
+use image::{DynamicImage, GenericImageView, ImageError, io::Reader, RgbaImage, Rgba};
 
 pub fn clean_and_optimize(image: &DynamicImage) -> Option<DynamicImage> {
     let empty = count_empty_padding(image);
@@ -22,52 +22,10 @@ pub fn clean_and_optimize(image: &DynamicImage) -> Option<DynamicImage> {
     Some(optimized_image)
 }
 
-pub fn count_top_empty_rows(image: &DynamicImage) -> u32 {
-    let mut count = 0u32;
-    for row in 0..image.height() {
-        if !is_row_empty(image, row) {
-            break;
-        }
-        count += 1;
-    }
-
-    count
-}
-
-pub fn count_bottom_empty_rows(image: &DynamicImage) -> u32 {
-    let mut count = 0u32;
-    for row in (0..image.height()).rev() {
-        if !is_row_empty(image, row) {
-            break;
-        }
-        count += 1;
-    }
-
-    count
-}
-
-pub fn count_left_empty_columns(image: &DynamicImage) -> u32 {
-    let mut count = 0u32;
-    for column in 0..image.width() {
-        if !is_column_empty(image, column) {
-            break;
-        }
-        count += 1;
-    }
-
-    count
-}
-
-pub fn count_right_empty_columns(image: &DynamicImage) -> u32 {
-    let mut count = 0u32;
-    for column in (0..image.width()).rev() {
-        if !is_column_empty(image, column) {
-            break;
-        }
-        count += 1;
-    }
-
-    count
+pub fn try_read_image(path: &str) -> Result<DynamicImage, ImageError> {
+    Reader::open(path)?
+        .with_guessed_format()?
+        .decode()
 }
 
 fn add_padding(image: &DynamicImage, padding: &Padding) -> DynamicImage {
@@ -101,6 +59,54 @@ fn clean(image: &DynamicImage, empty: &Padding) -> Option<DynamicImage> {
     let target_height = image.height() - empty.top - empty.bottom;
 
     Some(image.crop_imm(empty.left, empty.top, target_width, target_height))
+}
+
+fn count_top_empty_rows(image: &DynamicImage) -> u32 {
+    let mut count = 0u32;
+    for row in 0..image.height() {
+        if !is_row_empty(image, row) {
+            break;
+        }
+        count += 1;
+    }
+
+    count
+}
+
+fn count_bottom_empty_rows(image: &DynamicImage) -> u32 {
+    let mut count = 0u32;
+    for row in (0..image.height()).rev() {
+        if !is_row_empty(image, row) {
+            break;
+        }
+        count += 1;
+    }
+
+    count
+}
+
+fn count_left_empty_columns(image: &DynamicImage) -> u32 {
+    let mut count = 0u32;
+    for column in 0..image.width() {
+        if !is_column_empty(image, column) {
+            break;
+        }
+        count += 1;
+    }
+
+    count
+}
+
+fn count_right_empty_columns(image: &DynamicImage) -> u32 {
+    let mut count = 0u32;
+    for column in (0..image.width()).rev() {
+        if !is_column_empty(image, column) {
+            break;
+        }
+        count += 1;
+    }
+
+    count
 }
 
 fn count_empty_padding(image: &DynamicImage) -> Padding {
@@ -179,3 +185,71 @@ fn optimize(image: &DynamicImage, empty: &Padding) -> Option<DynamicImage> {
     Some(add_padding(&image, &padding))
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn count_empty_clean_image() {
+        let test_path = "./test.png";
+        let test_image = match ops::try_read_image(&test_path) {
+            Err(e) => {
+                panic!("test image is unreadable, error: {}", e);
+            },
+            Ok(img) => {
+                img
+            }
+        };
+        let empty = padding::Padding::new(
+            ops::count_top_empty_rows(&test_image),
+            ops::count_bottom_empty_rows(&test_image),
+            ops::count_left_empty_columns(&test_image),
+            ops::count_right_empty_columns(&test_image)
+        );
+
+        assert_eq!(empty.top, 0);
+        assert_eq!(empty.left, 0);
+        assert_eq!(empty.right, 0);
+        assert_eq!(empty.bottom, 0);
+    }
+
+    #[test]
+    fn clean_and_optimize_clean_image() {
+        let test_path = "./test.png";
+        let test_image = match ops::try_read_image(&test_path) {
+            Err(e) => {
+                panic!("diamond image is unreadable, error: {}", e);
+            },
+            Ok(img) => {
+                img
+            }
+        };
+        let clean_image = match ops::clean_and_optimize(&test_image) {
+            Some(img) => img,
+            None => test_image
+        };
+
+        assert_eq!(clean_image.width(), 8);
+        assert_eq!(clean_image.height(), 8);
+    }
+
+    #[test]
+    fn clean_and_optimzie_unclean_image() {
+        let test_path = "./test_unclean.png";
+        let test_image = match ops::try_read_image(&test_path) {
+            Err(e) => {
+                panic!("diamond image is unreadable, error: {}", e);
+            },
+            Ok(img) => {
+                img
+            }
+        };
+        let clean_image = match ops::clean_and_optimize(&test_image) {
+            Some(img) => img,
+            None => test_image
+        };
+
+        assert_eq!(clean_image.width(), 8);
+        assert_eq!(clean_image.height(), 8);
+    }
+}
