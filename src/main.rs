@@ -22,7 +22,7 @@ struct Arguments {
     force: bool,
 
     #[arg(short, long)]
-    resize: bool,
+    downsize: bool,
 
     #[arg(short, long)]
     max_size: Option<i32>
@@ -51,7 +51,7 @@ fn handle_error(error: &str) {
 fn process_image(mut image: DynamicImage, args: &Arguments) -> DynamicImage {
     image = ops::clean_image(image);
 
-    if args.resize {
+    if args.downsize {
         // this is to give room for padding.
         let max_size = (args.max_size.unwrap() as u32) - 2;
         image = ops::resize_image(image, max_size);
