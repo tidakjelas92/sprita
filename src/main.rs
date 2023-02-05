@@ -19,7 +19,13 @@ struct Arguments {
     output: String,
 
     #[arg(short, long)]
-    force: bool
+    force: bool,
+
+    #[arg(short, long)]
+    resize: bool,
+
+    #[arg(short, long)]
+    max_size: Option<i32>
 }
 
 fn initialize_logger() {
@@ -37,10 +43,23 @@ fn initialize_logger() {
     ).unwrap();
 }
 
-
 fn handle_error(error: &str) {
     error!("{}", error);
     std::process::exit(1);
+}
+
+fn process_image(mut image: DynamicImage, args: &Arguments) -> DynamicImage {
+    image = ops::clean_image(image);
+
+    if args.resize {
+        // this is to give room for padding.
+        let max_size = (args.max_size.unwrap() as u32) - 2;
+        image = ops::resize_image(image, max_size);
+    }
+
+    image = ops::optimize_image(image);
+
+    image
 }
 
 fn main() {
@@ -49,7 +68,7 @@ fn main() {
 
     let output_is_file = Path::new(&args.output).is_file();
 
-    let image: DynamicImage = match ops::try_read_image(&args.input) {
+    let mut image: DynamicImage = match ops::try_read_image(&args.input) {
         Err(e) => {
             let error_message = format!("Error while reading image: {}, {}", args.input, e);
             handle_error(error_message.as_str());
@@ -58,16 +77,13 @@ fn main() {
         Ok(img) => { img }
     };
 
-    let clean_image = match ops::clean_and_optimize(&image) {
-        Some(img) => img,
-        None => image
-    };
+    image = process_image(image, &args);
 
     if output_is_file && !args.force {
         handle_error("Output already exists. Aborting. Specify --force flag if you want to replace the output");
     }
 
-    match clean_image.save(&args.output) {
+    match image.save(&args.output) {
         Err(e) => {
             handle_error(e.to_string().as_str());
             return;
