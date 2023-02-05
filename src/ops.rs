@@ -16,6 +16,44 @@ pub fn clean_image(image: DynamicImage) -> DynamicImage {
     clean(image, &empty)
 }
 
+pub fn optimize_image(image: DynamicImage) -> DynamicImage {
+    let mut padding = Padding::new(0, 0, 0, 0);
+    let empty = count_empty_padding(&image);
+
+    padding.left += if empty.left == 0 { 1 } else { 0 };
+    padding.right += if empty.right == 0 { 1 } else { 0 };
+    padding.top += if empty.top == 0 { 1 } else { 0 };
+    padding.bottom += if empty.bottom == 0 { 1 } else { 0 };
+
+    match (image.width() + padding.left + padding.right) % 4 {
+        1 => {
+            padding.left += 1;
+            padding.right += 2;
+        },
+        2 => {
+            padding.left += 1;
+            padding.right += 1;
+        },
+        3 => { padding.right += 1; },
+        0 | 4..=u32::MAX => { }
+    }
+
+    match (image.height() + padding.top + padding.bottom) % 4 {
+        1 => {
+            padding.top += 1;
+            padding.bottom += 2;
+        },
+        2 => {
+            padding.top += 1;
+            padding.bottom += 1;
+        },
+        3 => { padding.bottom += 1; },
+        0 | 4..=u32::MAX => { }
+    }
+
+    add_padding(&image, &padding)
+}
+
 pub fn resize_image(image: DynamicImage, max_size: u32) -> DynamicImage {
     let ratio: f32 = image.width() as f32 / image.height() as f32;
     let new_size = max_size;
@@ -117,7 +155,7 @@ fn count_right_empty_columns(image: &DynamicImage) -> u32 {
     count
 }
 
-pub fn count_empty_padding(image: &DynamicImage) -> Padding {
+fn count_empty_padding(image: &DynamicImage) -> Padding {
     Padding::new(
         count_top_empty_rows(image),
         count_bottom_empty_rows(image),
@@ -147,7 +185,7 @@ fn is_column_empty(image: &DynamicImage, column: u32) -> bool {
 }
 
 // checks if padding is optimal.
-pub fn is_image_good(image: &DynamicImage, empty: &Padding) -> bool {
+fn is_image_good(image: &DynamicImage, empty: &Padding) -> bool {
     let is_dimension_optimized = image.width() % 4 == 0 && image.height() % 4 == 0;
     let empty_is_in_range = (1..4).contains(&empty.left) &&
         (1..4).contains(&empty.right) &&
@@ -157,46 +195,8 @@ pub fn is_image_good(image: &DynamicImage, empty: &Padding) -> bool {
     is_dimension_optimized && empty_is_in_range
 }
 
-pub fn is_padding_zero(padding: &Padding) -> bool {
+fn is_padding_zero(padding: &Padding) -> bool {
     padding.left == 0 && padding.right == 0 && padding.top == 0 && padding.bottom == 0
-}
-
-pub fn optimize_image(image: DynamicImage) -> DynamicImage {
-    let mut padding = Padding::new(0, 0, 0, 0);
-    let empty = count_empty_padding(&image);
-
-    padding.left += if empty.left == 0 { 1 } else { 0 };
-    padding.right += if empty.right == 0 { 1 } else { 0 };
-    padding.top += if empty.top == 0 { 1 } else { 0 };
-    padding.bottom += if empty.bottom == 0 { 1 } else { 0 };
-
-    match (image.width() + padding.left + padding.right) % 4 {
-        1 => {
-            padding.left += 1;
-            padding.right += 2;
-        },
-        2 => {
-            padding.left += 1;
-            padding.right += 1;
-        },
-        3 => { padding.right += 1; },
-        0 | 4..=u32::MAX => { }
-    }
-
-    match (image.height() + padding.top + padding.bottom) % 4 {
-        1 => {
-            padding.top += 1;
-            padding.bottom += 2;
-        },
-        2 => {
-            padding.top += 1;
-            padding.bottom += 1;
-        },
-        3 => { padding.bottom += 1; },
-        0 | 4..=u32::MAX => { }
-    }
-
-    add_padding(&image, &padding)
 }
 
 #[cfg(test)]
