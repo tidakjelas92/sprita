@@ -1,6 +1,6 @@
 use crate::{arguments::Arguments, error::handle_error, image_ops};
 use image::{DynamicImage, ImageError};
-use std::{fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::Path};
+use std::{cmp::max, fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::Path};
 
 pub fn process_args(args: &Arguments) {
     let input_path = Path::new(&args.input);
@@ -102,11 +102,19 @@ fn process_image(mut image: DynamicImage, downsize: bool, max_size: Option<i32>)
 
     if downsize {
         // this is to give room for padding.
-        let max_size = (max_size.unwrap() as u32) - 2;
-        image = image_ops::resize_image(image, max_size);
+        image = downsize_image(image, (max_size.unwrap() as u32) - 2);
     }
 
     image = image_ops::optimize_image(image);
+
+    image
+}
+
+fn downsize_image(mut image: DynamicImage, max_size: u32) -> DynamicImage {
+    let current_max_size = max(image.width(), image.height());
+    if current_max_size <= max_size { return image; }
+
+    image = image_ops::resize_image(image, max_size);
 
     image
 }
