@@ -70,7 +70,7 @@ fn process_dir_path(paths: ReadDir, output_dir_path: &Path, downsize: bool, max_
                 continue;
             },
             Ok(p) => {
-                let output_path_buf = output_dir_path.join(p.path());
+                let output_path_buf = output_dir_path.join(p.file_name());
 
                 let output_path = output_path_buf.as_path();
                 if output_path_buf.as_path().is_file() && !force {
