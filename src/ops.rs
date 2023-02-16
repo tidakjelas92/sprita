@@ -4,7 +4,12 @@ use std::{cmp::max, fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path:
 
 pub fn process_args(args: &Arguments) {
     if args.downsize {
+        if args.max_size.is_none() {
+            handle_error("downsizing operation requires a --max-size parameter to be specified.");
+        }
+
         let max_size = args.max_size.unwrap();
+
         if max_size < 2 {
             handle_error("--max-size parameter is too small.");
         }
