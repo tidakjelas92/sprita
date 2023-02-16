@@ -3,6 +3,17 @@ use image::{DynamicImage, ImageError};
 use std::{cmp::max, fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::Path};
 
 pub fn process_args(args: &Arguments) {
+    if args.downsize {
+        let max_size = args.max_size.unwrap();
+        if max_size < 2 {
+            handle_error("--max-size parameter is too small.");
+        }
+
+        if max_size % 4 != 0 {
+            warn!("--max-size parameter is not multiple of 4, it will be rounded up to the closest multiple of 4.");
+        }
+    }
+
     let input_path = Path::new(&args.input);
 
     if input_path.is_file() {
