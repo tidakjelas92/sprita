@@ -46,7 +46,7 @@ fn create_dir(path: &Path) {
     }
 }
 
-fn process_dir_path(paths: ReadDir, output_dir_path: &Path, downsize: bool, max_size: Option<i32>, force: bool) {
+fn process_dir_path(paths: ReadDir, output_dir_path: &Path, downsize: bool, max_size: Option<u32>, force: bool) {
     for path in paths {
         match &path {
             Err(e) => {
@@ -86,7 +86,7 @@ fn process_dir_path(paths: ReadDir, output_dir_path: &Path, downsize: bool, max_
     }
 }
 
-fn process_file_path(input: &String, output: &String, downsize: bool, max_size: Option<i32>) -> Result<(), ImageError> {
+fn process_file_path(input: &String, output: &String, downsize: bool, max_size: Option<u32>) -> Result<(), ImageError> {
     let output_path = Path::new(output);
 
     let mut image: DynamicImage = image_ops::try_read_image(input)?;
@@ -97,12 +97,12 @@ fn process_file_path(input: &String, output: &String, downsize: bool, max_size: 
     Ok(())
 }
 
-fn process_image(mut image: DynamicImage, downsize: bool, max_size: Option<i32>) -> DynamicImage {
+fn process_image(mut image: DynamicImage, downsize: bool, max_size: Option<u32>) -> DynamicImage {
     image = image_ops::clean_image(image);
 
     if downsize {
         // this is to give room for padding.
-        image = downsize_image(image, (max_size.unwrap() as u32) - 2);
+        image = downsize_image(image, max_size.unwrap() - 2);
     }
 
     image = image_ops::optimize_image(image);

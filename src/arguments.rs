@@ -15,5 +15,5 @@ pub struct Arguments {
     pub downsize: bool,
 
     #[arg(short, long)]
-    pub max_size: Option<i32>
+    pub max_size: Option<u32>
 }
