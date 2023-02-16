@@ -1,41 +1,100 @@
 use crate::{arguments::Arguments, error::handle_error, image_ops};
-use image::DynamicImage;
-use std::path::Path;
+use image::{DynamicImage, ImageError};
+use std::{fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::Path};
 
 pub fn process_args(args: &Arguments) {
     let input_path = Path::new(&args.input);
-    let output_path = Path::new(&args.output);
 
     if input_path.is_file() {
-        let output_is_file = output_path.is_file();
-
-        let mut image: DynamicImage = match image_ops::try_read_image(&args.input) {
-            Err(e) => {
-                let error_message = format!("Error while reading image: {}, {}", &args.input, e);
-                handle_error(error_message.as_str());
-                return;
-            },
-            Ok(img) => { img }
-        };
-
-        image = process_image(image, args.downsize, args.max_size);
-
-        if output_is_file && !args.force {
-            handle_error("Output already exists. Aborting. Specify --force flag if you want to replace the output");
+        let output_path = Path::new(&args.output);
+        match output_path.parent() {
+            None => { handle_error(format!("output: {} is an invalid path.", &args.output).as_str()); },
+            Some(parent) => { create_dir(parent); }
         }
 
-        match image.save(&args.output) {
-            Err(e) => {
-                handle_error(e.to_string().as_str());
-                return;
-            },
-            Ok(_) => {
-                info!("Successfully exported to: {}", args.output);
-            }
+        if output_path.is_file() && !args.force {
+            handle_error("Output path already contains a file. Specify --force if the program needs to overwrite it.");
         }
 
+        if output_path.is_dir() {
+            handle_error("Output path is a directory.");
+        }
+
+        match process_file_path(&args.input, &args.output, args.downsize, args.max_size) {
+            Err(e) => { handle_error(format!("input: {}\n    output: {}\n    error: {}", &args.input, &args.output, e.to_string()).as_str()); },
+            Ok(_) => { }
+        }
         return;
     }
+
+    let output_dir_path = Path::new(&args.output);
+    create_dir(&output_dir_path);
+
+    match read_dir(input_path) {
+        Ok(paths) => { process_dir_path(paths, &output_dir_path, args.downsize, args.max_size, args.force); },
+        Err(e) => { handle_error(&format!("input: {}. {}", &args.input, &e.to_string())); }
+    }
+}
+
+fn create_dir(path: &Path) {
+    if path.is_dir() { return; }
+
+    info!("{} is not a dir. Creating one...", path.to_str().unwrap());
+    match create_dir_all(&path) {
+        Ok(_) => { info!("Successfully created dir at: {}", path.to_str().unwrap()); },
+        Err(e) => { handle_error(&e.to_string()); }
+    }
+}
+
+fn process_dir_path(paths: ReadDir, output_dir_path: &Path, downsize: bool, max_size: Option<i32>, force: bool) {
+    for path in paths {
+        match &path {
+            Err(e) => {
+                error!("{}. path: {:?} Skipping...", &e.to_string(), path);
+                continue;
+            },
+            Ok(p) => {
+                let output_path_buf = output_dir_path.join(p.path());
+
+                let output_path = output_path_buf.as_path();
+                if output_path_buf.as_path().is_file() && !force {
+                    error!("Output path: {} already contains a file. Specify --force if the program needs to overwrite it. Skipping...", canonicalize(output_path).unwrap().display());
+                    continue;
+                }
+
+                match process_file_path(
+                    &p.path().into_os_string().into_string().unwrap(),
+                    &output_path_buf.into_os_string().into_string().unwrap(),
+                    downsize,
+                    max_size
+                ) {
+                    Err(e) => {
+                        // ImageError::IoError occurs when input is a dir.
+                        // ImageError::Unsupported occurs when the input is not an image.
+                        // these errors are ignored, but the rest are printed.
+                        match e {
+                            ImageError::IoError(_) => { },
+                            ImageError::Unsupported(_) => { },
+                            _ => { error!("error: {}. Skipping...", e.to_string()); }
+                        }
+                        continue;
+                    },
+                    Ok(_) => { }
+                }
+            }
+        }
+    }
+}
+
+fn process_file_path(input: &String, output: &String, downsize: bool, max_size: Option<i32>) -> Result<(), ImageError> {
+    let output_path = Path::new(output);
+
+    let mut image: DynamicImage = image_ops::try_read_image(input)?;
+    image = process_image(image, downsize, max_size);
+    image.save(output)?;
+
+    info!("Successfully exported to: {}", canonicalize(output_path).unwrap().display());
+    Ok(())
 }
 
 fn process_image(mut image: DynamicImage, downsize: bool, max_size: Option<i32>) -> DynamicImage {
