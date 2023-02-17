@@ -64,7 +64,7 @@ pub fn resize_image(image: DynamicImage, max_size: u32) -> DynamicImage {
         new_height = new_size as u32;
     }
 
-    image.resize(new_width, new_height, FilterType::Lanczos3)
+    image.resize(new_width, new_height, FilterType::CatmullRom)
 }
 
 pub fn try_read_image(path: &str) -> Result<DynamicImage, ImageError> {
