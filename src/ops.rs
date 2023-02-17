@@ -1,6 +1,6 @@
 use crate::{arguments::Arguments, error::handle_error, image_ops};
 use image::{DynamicImage, ImageError};
-use std::{cmp::max, fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::Path};
+use std::{cmp::max, fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::{Path, PathBuf}};
 
 pub fn process_args(args: &Arguments) {
     if args.downsize {
@@ -25,7 +25,12 @@ pub fn process_args(args: &Arguments) {
         let output_path = Path::new(&args.output);
         match output_path.parent() {
             None => { handle_error(format!("output: {} is an invalid path.", &args.output).as_str()); },
-            Some(parent) => { create_dir(parent); }
+            Some(parent) => {
+                // passing only the file name will cause parent() to return Some("")
+                if parent.to_path_buf() != PathBuf::from("") {
+                    create_dir(parent);
+                }
+            }
         }
 
         if output_path.is_file() && !args.force {
