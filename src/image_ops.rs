@@ -261,61 +261,61 @@ mod tests {
     }
 
     #[test]
-    fn clean_pig_image() {
-        let pig_path = "./pig.png";
-        let pig_image = match try_read_image(&pig_path) {
+    fn clean_ball_image() {
+        let ball_path = "./ball.png";
+        let ball_image = match try_read_image(&ball_path) {
             Err(e) => { panic!("test image is unreadable, error: {}", e); },
             Ok(img) => { img }
         };
 
-        let empty = count_empty_padding(&pig_image);
-        assert_eq!(is_image_good(&pig_image, &empty), false);
+        let empty = count_empty_padding(&ball_image);
+        assert_eq!(is_image_good(&ball_image, &empty), false);
         assert_eq!(is_padding_zero(&empty), false);
 
-        let pig_image = clean_image(pig_image);
-        let empty = count_empty_padding(&pig_image);
+        let ball_image = clean_image(ball_image);
+        let empty = count_empty_padding(&ball_image);
 
         assert_eq!(is_padding_zero(&empty), true);
     }
 
     #[test]
-    fn clean_and_optimize_pig_image() {
-        let pig_path = "./pig.png";
-        let pig_image = match try_read_image(&pig_path) {
+    fn clean_and_optimize_ball_image() {
+        let ball_path = "./ball.png";
+        let ball_image = match try_read_image(&ball_path) {
             Err(e) => { panic!("test image is unreadable, error: {}", e); },
             Ok(img) => { img }
         };
 
-        let pig_image = clean_image(pig_image);
-        let pig_image = optimize_image(pig_image);
-        let empty = count_empty_padding(&pig_image);
+        let ball_image = clean_image(ball_image);
+        let ball_image = optimize_image(ball_image);
+        let empty = count_empty_padding(&ball_image);
 
-        assert_eq!(is_image_good(&pig_image, &empty), true);
+        assert_eq!(is_image_good(&ball_image, &empty), true);
     }
 
     #[test]
-    fn resize_pig_image() {
-        let pig_path = "./pig.png";
-        let pig_image = match try_read_image(&pig_path) {
+    fn resize_ball_image() {
+        let ball_path = "./ball.png";
+        let ball_image = match try_read_image(&ball_path) {
             Err(e) => { panic!("test image is unreadable, error: {}", e); },
             Ok(img) => { img }
         };
 
-        let pig_image = clean_image(pig_image);
-        let empty = count_empty_padding(&pig_image);
+        let ball_image = clean_image(ball_image);
+        let empty = count_empty_padding(&ball_image);
         assert_eq!(is_padding_zero(&empty), true);
 
-        let pig_image = resize_image(pig_image, 238);
-        assert_eq!(pig_image.width(), 238);
-        assert_eq!(pig_image.height(), 201);
+        let ball_image = resize_image(ball_image, 238);
+        assert_eq!(ball_image.width(), 238);
+        assert_eq!(ball_image.height(), 238);
 
-        let empty = count_empty_padding(&pig_image);
+        let empty = count_empty_padding(&ball_image);
         assert_eq!(is_padding_zero(&empty), true);
 
-        let pig_image = optimize_image(pig_image);
-        let empty = count_empty_padding(&pig_image);
-        assert_eq!(is_image_good(&pig_image, &empty), true);
-        assert_eq!(pig_image.width(), 240);
-        assert_eq!(pig_image.height(), 204);
+        let ball_image = optimize_image(ball_image);
+        let empty = count_empty_padding(&ball_image);
+        assert_eq!(is_image_good(&ball_image, &empty), true);
+        assert_eq!(ball_image.width(), 240);
+        assert_eq!(ball_image.height(), 240);
     }
 }
