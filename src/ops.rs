@@ -19,20 +19,19 @@ pub fn process_args(args: &Arguments) {
         }
     }
 
-    let input_path = Path::new(&args.input);
-
-    if input_path.is_file() {
-        let output_path = Path::new(&args.output);
-        match output_path.parent() {
-            None => { handle_error(format!("output: {} is an invalid path.", &args.output).as_str()); },
-            Some(parent) => {
-                // passing only the file name will cause parent() to return Some("")
-                if parent.to_path_buf() != PathBuf::from("") {
-                    create_dir(parent);
-                }
+    let output_path = Path::new(&args.output);
+    match output_path.parent() {
+        None => { handle_error(format!("output: {} is an invalid path.", &args.output).as_str()); },
+        Some(parent) => {
+            // passing only the file name will cause parent() to return Some("")
+            if parent.to_path_buf() != PathBuf::from("") {
+                create_dir(parent);
             }
         }
+    }
 
+    let input_path = Path::new(&args.input);
+    if input_path.is_file() {
         if output_path.is_file() && !args.force {
             handle_error("Output path already contains a file. Specify --force if the program needs to overwrite it.");
         }
@@ -48,16 +47,16 @@ pub fn process_args(args: &Arguments) {
         return;
     }
 
-    let output_dir_path = Path::new(&args.output);
-    create_dir(&output_dir_path);
+    create_dir(&output_path);
 
     match read_dir(input_path) {
-        Ok(paths) => { process_dir_path(paths, &output_dir_path, args.downsize, args.max_size, args.force); },
+        Ok(paths) => { process_dir_path(paths, &output_path, args.downsize, args.max_size, args.force); },
         Err(e) => { handle_error(&format!("input: {}. {}", &args.input, &e.to_string())); }
     }
 }
 
 fn create_dir(path: &Path) {
+
     if path.is_dir() { return; }
 
     info!("{} is not a dir. Creating one...", path.to_str().unwrap());
