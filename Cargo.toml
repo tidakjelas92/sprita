@@ -1,12 +1,12 @@
 [package]
 authors = ["tidakjelas92 <hansenan14@gmail.com>"]
-description = "sprita is a sprite preparing tool for game development."
+description = "sprita is a tool to automate sprite preparation for game ready assets."
 edition = "2021"
 license-file = "LICENSE.txt"
 name = "sprita"
 readme = "README.md"
 repository = "https://github.com/tidakjelas92/sprita"
-version = "0.1.0"
+version = "1.0.0"
 keywords = ["gamedev", "sprite"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
