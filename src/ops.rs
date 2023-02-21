@@ -1,6 +1,6 @@
 use crate::{arguments::Arguments, error::handle_error, image_ops};
 use image::{DynamicImage, ImageError};
-use std::{cmp::max, fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::{Path, PathBuf}};
+use std::{cmp::max, fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::{Path, PathBuf}, thread, thread::JoinHandle};
 
 pub fn process_args(args: &Arguments) {
     if args.downsize {
@@ -66,15 +66,53 @@ fn create_dir(path: &Path) {
     }
 }
 
-fn process_dir_path(paths: ReadDir, output_dir_path: &Path, downsize: bool, max_size: Option<u32>, force: bool) {
+fn process_dir_path(paths_read_dir: ReadDir, output_dir_path: &Path, downsize: bool, max_size: Option<u32>, force: bool) {
+    let mut handles = Vec::<JoinHandle<()>>::new();
+    let paths = get_entries(paths_read_dir, output_dir_path, force);
+
     for path in paths {
+        let output_path = output_dir_path.join(path.file_name().unwrap_or(&path.clone().into_os_string()));
+
+        let handle = thread::spawn(move || {
+            match process_file_path(
+                &path.into_os_string().into_string().unwrap(),
+                &output_path.into_os_string().into_string().unwrap(),
+                downsize,
+                max_size
+            ) {
+                Err(e) => {
+                    // ImageError::IoError occurs when input is a dir.
+                    // ImageError::Unsupported occurs when the input is not an image.
+                    // these errors are ignored, but the rest are printed.
+                    match e {
+                        ImageError::IoError(_) => { },
+                        ImageError::Unsupported(_) => { },
+                        _ => { error!("error: {}. Skipping...", e.to_string()); }
+                    }
+                },
+                Ok(_) => { }
+            }
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles.into_iter() {
+        handle.join().unwrap();
+    }
+}
+
+fn get_entries(dir: ReadDir, output_dir_path: &Path, force: bool) -> Vec<PathBuf> {
+    let mut paths = Vec::<PathBuf>::new();
+
+    for path in dir {
         match &path {
             Err(e) => {
                 error!("{}. path: {:?} Skipping...", &e.to_string(), path);
                 continue;
             },
-            Ok(p) => {
-                let output_path_buf = output_dir_path.join(p.file_name());
+            Ok(entry) => {
+                let output_path_buf = output_dir_path.join(entry.file_name());
 
                 let output_path = output_path_buf.as_path();
                 if output_path_buf.as_path().is_file() && !force {
@@ -82,28 +120,12 @@ fn process_dir_path(paths: ReadDir, output_dir_path: &Path, downsize: bool, max_
                     continue;
                 }
 
-                match process_file_path(
-                    &p.path().into_os_string().into_string().unwrap(),
-                    &output_path_buf.into_os_string().into_string().unwrap(),
-                    downsize,
-                    max_size
-                ) {
-                    Err(e) => {
-                        // ImageError::IoError occurs when input is a dir.
-                        // ImageError::Unsupported occurs when the input is not an image.
-                        // these errors are ignored, but the rest are printed.
-                        match e {
-                            ImageError::IoError(_) => { },
-                            ImageError::Unsupported(_) => { },
-                            _ => { error!("error: {}. Skipping...", e.to_string()); }
-                        }
-                        continue;
-                    },
-                    Ok(_) => { }
-                }
+                paths.push(entry.path());
             }
         }
     }
+
+    paths
 }
 
 fn process_file_path(input: &String, output: &String, downsize: bool, max_size: Option<u32>) -> Result<(), ImageError> {
