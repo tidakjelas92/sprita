@@ -3,6 +3,11 @@ use image::{DynamicImage, ImageError};
 use std::{cmp::max, fs::{canonicalize, create_dir_all, ReadDir, read_dir}, path::{Path, PathBuf}, thread, thread::JoinHandle};
 
 pub fn process_args(args: &Arguments) {
+    let input_path = Path::new(&args.input);
+    if !input_path.exists() {
+        handle_error(format!("input: {} does not exist!", &args.input).as_str());
+    }
+
     if args.downsize {
         if args.max_size.is_none() {
             handle_error("downsizing operation requires a --max-size parameter to be specified.");
@@ -30,7 +35,6 @@ pub fn process_args(args: &Arguments) {
         }
     }
 
-    let input_path = Path::new(&args.input);
     if input_path.is_file() {
         if output_path.is_file() && !args.force {
             handle_error("Output path already contains a file. Specify --force if the program needs to overwrite it.");
