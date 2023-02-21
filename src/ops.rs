@@ -60,7 +60,6 @@ pub fn process_args(args: &Arguments) {
 }
 
 fn create_dir(path: &Path) {
-
     if path.is_dir() { return; }
 
     info!("{} is not a dir. Creating one...", path.to_str().unwrap());
